@@ -34,14 +34,14 @@ export class UsersService {
     }
   }
 
-  async getById(id: string) {
+  async getById(id: string): Promise<User | null> {
     return this.userRepository
       .createQueryBuilder('user')
       .where('user.id = :id', { id })
       .getOne();
   }
 
-  async getByEmailForAuth(email: string) {
+  async getByEmailForAuth(email: string): Promise<User | null> {
     return this.userRepository
       .createQueryBuilder('user')
       .where('user.email = :email', { email })

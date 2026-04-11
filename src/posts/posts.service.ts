@@ -10,7 +10,7 @@ export class PostsService {
     @InjectRepository(Post) private readonly postsRepository: Repository<Post>,
   ) {}
 
-  async create(userId: string, dto: CreatePostDto) {
+  async create(userId: string, dto: CreatePostDto): Promise<Post> {
     const postObj = this.postsRepository.create({
       content: dto.content,
       authorId: userId,
@@ -18,7 +18,7 @@ export class PostsService {
     return this.postsRepository.save(postObj);
   }
 
-  async delete(userId: string, postId: string) {
+  async delete(userId: string, postId: string): Promise<void> {
     const result = await this.postsRepository.delete({
       id: postId,
       authorId: userId,
@@ -26,7 +26,11 @@ export class PostsService {
     if (result.affected === 0) throw new NotFoundException();
   }
 
-  async update(userId: string, postId: string, dto: UpdatePostDto) {
+  async update(
+    userId: string,
+    postId: string,
+    dto: UpdatePostDto,
+  ): Promise<void> {
     const result = await this.postsRepository.update(
       {
         id: postId,
@@ -37,7 +41,7 @@ export class PostsService {
     if (result.affected === 0) throw new NotFoundException();
   }
 
-  async getById(userId: string, postId: string) {
+  async getById(userId: string, postId: string): Promise<Post | null> {
     return this.postsRepository
       .createQueryBuilder('post')
       .where('post.id = :postId', { postId })
@@ -45,7 +49,7 @@ export class PostsService {
       .getOne();
   }
 
-  async getAll(userId: string) {
+  async getAll(userId: string): Promise<[Post[], number]> {
     return this.postsRepository
       .createQueryBuilder('post')
       .where('post.authorId = :userId', { userId })

@@ -11,7 +11,11 @@ export class CommentsService {
     private readonly commentsRepository: Repository<Comment>,
   ) {}
 
-  async create(userId: string, postId: string, dto: CreateCommentDto) {
+  async create(
+    userId: string,
+    postId: string,
+    dto: CreateCommentDto,
+  ): Promise<Comment> {
     const commentObj = this.commentsRepository.create({
       content: dto.content,
       authorId: userId,
@@ -20,7 +24,11 @@ export class CommentsService {
     return this.commentsRepository.save(commentObj);
   }
 
-  async delete(userId: string, postId: string, commentId: string) {
+  async delete(
+    userId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<void> {
     const result = await this.commentsRepository.delete({
       id: commentId,
       authorId: userId,
@@ -34,7 +42,7 @@ export class CommentsService {
     postId: string,
     commentId: string,
     dto: UpdateCommentDto,
-  ) {
+  ): Promise<void> {
     const result = await this.commentsRepository.update(
       {
         id: commentId,
@@ -46,7 +54,11 @@ export class CommentsService {
     if (result.affected === 0) throw new NotFoundException();
   }
 
-  async getById(userId: string, postId: string, commentId: string) {
+  async getById(
+    userId: string,
+    postId: string,
+    commentId: string,
+  ): Promise<Comment | null> {
     return this.commentsRepository
       .createQueryBuilder('comment')
       .where('comment.id = :commentId', { commentId })

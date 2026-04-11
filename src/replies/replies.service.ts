@@ -24,7 +24,11 @@ export class RepliesService {
     return this.repliesRepository.save(replyObj);
   }
 
-  async delete(userId: string, commentId: string, replyId: string) {
+  async delete(
+    userId: string,
+    commentId: string,
+    replyId: string,
+  ): Promise<void> {
     const result = await this.repliesRepository.delete({
       id: replyId,
       authorId: userId,
@@ -38,7 +42,7 @@ export class RepliesService {
     commentId: string,
     replyId: string,
     dto: UpdateReplyDto,
-  ) {
+  ): Promise<void> {
     const result = await this.repliesRepository.update(
       {
         id: replyId,
@@ -50,7 +54,11 @@ export class RepliesService {
     if (result.affected === 0) throw new NotFoundException();
   }
 
-  async getById(userId: string, commentId: string, replyId: string) {
+  async getById(
+    userId: string,
+    commentId: string,
+    replyId: string,
+  ): Promise<Reply | null> {
     return this.repliesRepository
       .createQueryBuilder('reply')
       .where('reply.id = :replyId', { replyId })
