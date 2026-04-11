@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -14,7 +13,6 @@ import { CreateUserDto } from '../dtos';
 import type { Response } from 'express';
 import { UserRole } from '../entities';
 import { AccessGuard, LocalGuard, RefreshGuard } from '../guards';
-import { CurrentUser } from '../decorators';
 
 export const REFRESH_TOKEN = 'refreshToken';
 const isProd = process.env.NODE_ENV === 'production';
@@ -107,11 +105,5 @@ export class AuthController {
       message: 'tokens refreshed',
       accessToken,
     };
-  }
-
-  @Get('profile')
-  @UseGuards(AccessGuard)
-  get(@CurrentUser() user: any) {
-    console.log(user);
   }
 }
