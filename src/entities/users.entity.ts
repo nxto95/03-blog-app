@@ -23,6 +23,9 @@ export class User extends SharedColumns {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
+  @Column('text', { nullable: true })
+  refreshToken: string | null;
+
   @OneToMany(() => Post, (post) => post.author)
   posts: Post[];
   @OneToMany(() => Comment, (comment) => comment.author)

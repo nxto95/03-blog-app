@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { QueryFailedError, Repository } from 'typeorm';
 import { CreateUserDto } from '../dtos';
 import { User } from '../entities';
@@ -23,12 +27,12 @@ export class UsersService {
     } catch (error) {
       if (error instanceof QueryFailedError) {
         const err = error as any;
-        if (err.code === '23505')
-          if (
-            err.detail.match === 'unique_email' ||
-            err.constraint === 'unique_username'
-          )
-            throw new ConflictException(err.detail);
+        if (err.code === '23505') {
+          if (err.constraint === 'unique_email')
+            throw new ConflictException('email already exist');
+          if (err.constraint === 'unique_username')
+            throw new ConflictException('username already exist');
+        }
       }
       throw error;
     }
@@ -47,5 +51,26 @@ export class UsersService {
       .where('user.email = :email', { email })
       .addSelect('user.password')
       .getOne();
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashed = await argon.hash(refreshToken);
+    const result = await this.userRepository
+      .createQueryBuilder()
+      .update()
+      .set({ refreshToken: hashed })
+      .where('id = :userId', { userId })
+      .execute();
+    if (result.affected === 0) throw new NotFoundException();
+  }
+
+  async removeRefreshToken(userId: string) {
+    const result = await this.userRepository
+      .createQueryBuilder()
+      .update()
+      .set({ refreshToken: null })
+      .where('id = :userId', { userId })
+      .execute();
+    if (result.affected === 0) throw new NotFoundException();
   }
 }
