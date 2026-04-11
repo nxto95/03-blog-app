@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module';
+import { PostsModule } from './posts/posts.module';
+import { CommentsModule } from './comments/comments.module';
+import { RepliesModule } from './replies/replies.module';
 import database from './config/database';
 import schema from './config/schema';
 import redis from './config/redis';
@@ -18,6 +22,10 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => config.getOrThrow('database'),
     }),
+    UsersModule,
+    PostsModule,
+    CommentsModule,
+    RepliesModule,
   ],
   providers: [
     {
