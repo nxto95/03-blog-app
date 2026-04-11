@@ -1,5 +1,5 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
-import { User } from '../entities';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Post, Reply, User } from '../entities';
 import { SharedColumns } from './shared-columns';
 
 @Entity({ name: 'comments' })
@@ -9,4 +9,16 @@ export class Comment extends SharedColumns {
 
   @ManyToOne(() => User, (user) => user.comments, { onDelete: 'CASCADE' })
   author: User;
+
+  @Column()
+  authorId: string;
+
+  @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
+  relatedPost: Post;
+
+  @Column()
+  relatedPostId: string;
+
+  @OneToMany(() => Reply, (reply) => reply.relatedComment)
+  replies: Reply[];
 }
