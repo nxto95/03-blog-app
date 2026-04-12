@@ -12,8 +12,9 @@ import {
 import { RepliesService } from './replies.service';
 import { AccessGuard } from '../guards';
 import { CurrentUser } from '../decorators';
-import type { AuthUser } from '../posts/posts.controller';
+
 import { CreateReplyDto, UpdateReplyDto } from '../dtos';
+import type { AuthUser } from '../types';
 
 @Controller('replies')
 @UseGuards(AccessGuard)

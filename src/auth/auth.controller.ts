@@ -11,10 +11,9 @@ import {
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../dtos';
 import type { Response } from 'express';
-import { UserRole } from '../entities';
 import { AccessGuard, LocalGuard, RefreshGuard } from '../guards';
+import { AuthUser, REFRESH_TOKEN } from '../types';
 
-export const REFRESH_TOKEN = 'refreshToken';
 const isProd = process.env.NODE_ENV === 'production';
 
 @Controller('auth')
@@ -45,7 +44,7 @@ export class AuthController {
   @UseGuards(LocalGuard)
   @HttpCode(HttpStatus.OK)
   async login(
-    @Req() req: { user: { id: string; role: UserRole } },
+    @Req() req: { user: AuthUser },
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.login(
@@ -69,7 +68,7 @@ export class AuthController {
   @UseGuards(AccessGuard)
   @HttpCode(HttpStatus.OK)
   async logout(
-    @Req() req: { user: { id: string; role: UserRole } },
+    @Req() req: { user: AuthUser },
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.logout(req.user);
@@ -88,7 +87,7 @@ export class AuthController {
   @UseGuards(RefreshGuard)
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @Req() req: { user: { id: string; role: UserRole } },
+    @Req() req: { user: AuthUser },
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken } = await this.authService.refresh(

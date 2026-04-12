@@ -2,14 +2,10 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon from 'argon2';
 import { CreateUserDto } from '../dtos';
-import { UserRole } from '../entities';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
-export interface JwtPayload {
-  sub: string;
-  role: UserRole;
-}
+import { randomUUID } from 'crypto';
+import { AuthUser, JwtPayload } from '../types';
 
 @Injectable()
 export class AuthService {
@@ -21,30 +17,40 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.getByEmailForAuth(email);
-    if (!user) throw new UnauthorizedException();
+    if (!user) throw new UnauthorizedException('invalid credentials');
     const isPasswordMatch = await argon.verify(user.password, password);
-    if (!isPasswordMatch) throw new UnauthorizedException();
-    return user;
+    if (!isPasswordMatch)
+      throw new UnauthorizedException('invalid credentials');
+    return {
+      id: user.id,
+      role: user.role,
+    };
   }
 
   async register(dto: CreateUserDto) {
     const user = await this.usersService.create(dto);
-    const payload = this.generatePayload(user);
-    const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessTokens(payload),
-      this.generateRefreshTokens(payload),
-    ]);
-    await this.usersService.updateRefreshToken(user.id, refreshToken);
+    const payload = this.createPayload(user);
+    const { accessToken, refreshToken, jti } =
+      await this.generateTokens(payload);
+    await this.usersService.updateRefreshToken(
+      user.id,
+      refreshToken,
+      null,
+      jti,
+    );
     return { accessToken, refreshToken };
   }
 
-  async login(user: { id: string; role: UserRole }) {
-    const payload = this.generatePayload(user);
-    const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessTokens(payload),
-      this.generateRefreshTokens(payload),
-    ]);
-    await this.usersService.updateRefreshToken(user.id, refreshToken);
+  async login(user: AuthUser) {
+    const payload = this.createPayload(user);
+    const { accessToken, refreshToken, jti } =
+      await this.generateTokens(payload);
+    await this.usersService.updateRefreshToken(
+      user.id,
+      refreshToken,
+      null,
+      jti,
+    );
     return { accessToken, refreshToken };
   }
 
@@ -52,32 +58,47 @@ export class AuthService {
     await this.usersService.removeRefreshToken(user.id);
   }
 
-  async refresh(user: { id: string; role: UserRole }) {
-    const payload = this.generatePayload(user);
-    const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessTokens(payload),
-      this.generateRefreshTokens(payload),
-    ]);
-    await this.usersService.updateRefreshToken(user.id, refreshToken);
+  async refresh(user: AuthUser) {
+    const payload = this.createPayload(user);
+    const {
+      accessToken,
+      refreshToken,
+      jti: newRefreshTokenJti,
+    } = await this.generateTokens(payload);
+    await this.usersService.updateRefreshToken(
+      user.id,
+      refreshToken,
+      user.jti,
+      newRefreshTokenJti,
+    );
     return { accessToken, refreshToken };
   }
 
   //   tokens
-  async generateAccessTokens(payload: JwtPayload) {
-    return await this.jwtService.signAsync(payload, {
-      secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.getOrThrow('JWT_ACCESS_EXPIRY'),
-    });
+
+  async generateTokens(payload: JwtPayload): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    jti: string;
+  }> {
+    const jti = randomUUID();
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
+        expiresIn: this.configService.getOrThrow('JWT_ACCESS_EXPIRY'),
+      }),
+      this.jwtService.signAsync(
+        { sub: payload.sub, jti },
+        {
+          secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
+          expiresIn: this.configService.getOrThrow('JWT_REFRESH_EXPIRY'),
+        },
+      ),
+    ]);
+    return { accessToken, refreshToken, jti };
   }
 
-  async generateRefreshTokens(payload: JwtPayload) {
-    return await this.jwtService.signAsync(payload, {
-      secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.getOrThrow('JWT_REFRESH_EXPIRY'),
-    });
-  }
-
-  generatePayload(user: { id: string; role: UserRole }): JwtPayload {
+  createPayload(user: AuthUser): JwtPayload {
     return { sub: user.id, role: user.role };
   }
 }

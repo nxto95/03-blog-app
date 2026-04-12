@@ -13,11 +13,7 @@ import { PostsService } from './posts.service';
 import { AccessGuard } from '../guards';
 import { CurrentUser } from '../decorators';
 import { CreatePostDto, UpdatePostDto } from '../dtos';
-
-export type AuthUser = {
-  id: string;
-  role: string;
-};
+import type { AuthUser } from '../types';
 
 @Controller('posts')
 @UseGuards(AccessGuard)

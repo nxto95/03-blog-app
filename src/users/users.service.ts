@@ -1,7 +1,7 @@
 import {
   ConflictException,
   Injectable,
-  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { QueryFailedError, Repository } from 'typeorm';
 import { CreateUserDto } from '../dtos';
@@ -53,24 +53,30 @@ export class UsersService {
       .getOne();
   }
 
-  async updateRefreshToken(userId: string, refreshToken: string) {
+  async updateRefreshToken(
+    userId: string,
+    refreshToken: string,
+    oldRefreshTokenJti: string | null | undefined,
+    newRefreshTokenJti: string,
+  ) {
     const hashed = await argon.hash(refreshToken);
     const result = await this.userRepository
       .createQueryBuilder()
       .update()
-      .set({ refreshToken: hashed })
+      .set({ refreshToken: hashed, refreshTokenJti: newRefreshTokenJti })
       .where('id = :userId', { userId })
+      .andWhere('refreshTokenJti = :oldRefreshTokenJti', { oldRefreshTokenJti })
       .execute();
-    if (result.affected === 0) throw new NotFoundException();
+    if (result.affected === 0)
+      throw new UnauthorizedException('Invalid or expired refresh token');
   }
 
   async removeRefreshToken(userId: string) {
-    const result = await this.userRepository
+    await this.userRepository
       .createQueryBuilder()
       .update()
-      .set({ refreshToken: null })
+      .set({ refreshToken: null, refreshTokenJti: null })
       .where('id = :userId', { userId })
       .execute();
-    if (result.affected === 0) throw new NotFoundException();
   }
 }

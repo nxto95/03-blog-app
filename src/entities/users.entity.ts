@@ -1,11 +1,7 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { Post, Comment, Reply } from '../entities';
 import { SharedColumns } from './shared-columns';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-}
+import { UserRole } from '../types';
 
 @Entity({ name: 'users' })
 export class User extends SharedColumns {
@@ -25,6 +21,8 @@ export class User extends SharedColumns {
 
   @Column('text', { nullable: true })
   refreshToken: string | null;
+  @Column('text', { nullable: true })
+  refreshTokenJti: string | null;
 
   @OneToMany(() => Post, (post) => post.author)
   posts: Post[];

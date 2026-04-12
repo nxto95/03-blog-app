@@ -12,8 +12,8 @@ import {
 import { CommentsService } from './comments.service';
 import { AccessGuard } from '../guards';
 import { CurrentUser } from '../decorators';
-import type { AuthUser } from '../posts/posts.controller';
 import { CreateCommentDto, UpdateCommentDto } from '../dtos';
+import type { AuthUser } from '../types';
 
 @Controller('comments')
 @UseGuards(AccessGuard)
