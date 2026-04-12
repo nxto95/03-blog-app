@@ -57,7 +57,7 @@ export class UsersService {
     userId: string,
     refreshToken: string,
     newRefreshTokenJti: string,
-  ) {
+  ): Promise<void> {
     const hashed = await argon.hash(refreshToken);
     const result = await this.userRepository
       .createQueryBuilder()
