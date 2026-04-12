@@ -5,9 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AccessStrategy, LocalStrategy, RefreshStrategy } from '../strategies';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [PassportModule, JwtModule, UsersModule],
+  imports: [PassportModule, JwtModule, UsersModule, RedisModule],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, AccessStrategy, RefreshStrategy],
 })

@@ -10,9 +10,8 @@ import { AuthModule } from './auth/auth.module';
 import database from './config/database';
 import schema from './config/schema';
 import redis from './config/redis';
-import Redis from 'ioredis';
+import { RedisModule } from './redis/redis.module';
 
-export const REDIS_CLIENT = 'REDIS_CLIENT';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,20 +29,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
     RepliesModule,
     DashboardModule,
     AuthModule,
-  ],
-  providers: [
-    {
-      provide: REDIS_CLIENT,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const redis = config.getOrThrow('redis');
-        return new Redis({
-          host: redis.host,
-          port: redis.port,
-          password: redis.password,
-        });
-      },
-    },
+    RedisModule,
   ],
 })
 export class AppModule {}

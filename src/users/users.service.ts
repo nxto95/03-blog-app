@@ -53,6 +53,22 @@ export class UsersService {
       .getOne();
   }
 
+  async setRefreshToken(
+    userId: string,
+    refreshToken: string,
+    newRefreshTokenJti: string,
+  ) {
+    const hashed = await argon.hash(refreshToken);
+    const result = await this.userRepository
+      .createQueryBuilder()
+      .update()
+      .set({ refreshToken: hashed, refreshTokenJti: newRefreshTokenJti })
+      .where('id = :userId', { userId })
+      .execute();
+    if (result.affected === 0)
+      throw new UnauthorizedException('Invalid or expired refresh token');
+  }
+
   async updateRefreshToken(
     userId: string,
     refreshToken: string,

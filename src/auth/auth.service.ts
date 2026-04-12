@@ -1,11 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as argon from 'argon2';
 import { CreateUserDto } from '../dtos';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { AuthUser, JwtPayload } from '../types';
+import { AuthUser, JwtPayload, REDIS_CLIENT } from '../types';
+import Redis from 'ioredis';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -32,12 +34,7 @@ export class AuthService {
     const payload = this.createPayload(user);
     const { accessToken, refreshToken, jti } =
       await this.generateTokens(payload);
-    await this.usersService.updateRefreshToken(
-      user.id,
-      refreshToken,
-      null,
-      jti,
-    );
+    await this.usersService.setRefreshToken(user.id, refreshToken, jti);
     return { accessToken, refreshToken };
   }
 
@@ -45,17 +42,13 @@ export class AuthService {
     const payload = this.createPayload(user);
     const { accessToken, refreshToken, jti } =
       await this.generateTokens(payload);
-    await this.usersService.updateRefreshToken(
-      user.id,
-      refreshToken,
-      null,
-      jti,
-    );
+    await this.usersService.setRefreshToken(user.id, refreshToken, jti);
     return { accessToken, refreshToken };
   }
 
-  async logout(user: { id: string }) {
+  async logout(user: AuthUser) {
     await this.usersService.removeRefreshToken(user.id);
+    await this.redisClient.set(`bl:access:${user.jti}`, '1', 'EX', 10 * 60);
   }
 
   async refresh(user: AuthUser) {
@@ -83,10 +76,13 @@ export class AuthService {
   }> {
     const jti = randomUUID();
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
-        expiresIn: this.configService.getOrThrow('JWT_ACCESS_EXPIRY'),
-      }),
+      this.jwtService.signAsync(
+        { sub: payload.sub, role: payload.role, jti },
+        {
+          secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
+          expiresIn: this.configService.getOrThrow('JWT_ACCESS_EXPIRY'),
+        },
+      ),
       this.jwtService.signAsync(
         { sub: payload.sub, jti },
         {

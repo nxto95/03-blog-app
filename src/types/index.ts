@@ -16,5 +16,8 @@ export interface AuthUser {
   id: string;
   role: UserRole;
   refreshToken?: string | null;
+  accessTokens?: string | null;
   jti?: string | null;
 }
+
+export const REDIS_CLIENT = 'REDIS_CLIENT';
